@@ -1,57 +1,67 @@
+{- |
+   Module     : Functions
+
+   Maintainer : Vishal <ec21202@qmul.ac.uk>
+
+- This module contains all the methods used within the application including the methods to manipulate threads, create-send messages.
+Written by Vishal
+-}
+
 module Functions (
-     createUser,
-     generateMessage,
-     sendMessages,
-     countReceiver,
+     selectUser,
+     sendMessageThreads,
+     countMessages,
 )where
 
 import Datatype
-
 import System.Random
 import Control.Concurrent
 import Control.Monad
 import qualified Data.Map as Map
--- import Data.List (sortWith)
 
-createUser :: Int -> IO User
-createUser n = do
+
+{- | Method to select user from the List of Users  -}
+selectUser :: Int -> IO User
+selectUser n = do
     return User {name = (name (users !! n))}
 
--- Function to randomly generate messages between users
-generateMessage :: [User] -> IO Msg
-generateMessage users = do
-  sender <- randomRIO (0, (length users) - 1)
-  --putStrLn ("sender: " ++ show sender)
-  let withoutTheSender = filter (\x -> x /= (sender)) [0..9]
-  --print ("withoutTheSender: " ++ show withoutTheSender)
-  i <- randomRIO (0, (length withoutTheSender) - 1)
-  --print ("i:" ++ show i)
-  let receiver = withoutTheSender !! i 
-  let messageList = ["Hello, how are you?", "Hi, how are you?", "Goodbye, have a nice day!", "See you later, have a nice day!"]
-  j <- randomRIO (0, (length messageList) - 1)
-  let text = messageList !! j
-  putStrLn (name (users !! sender) ++" sent the message '" ++ text ++ "' to: " ++ name (users !! receiver))
-  return $ Msg (users !! sender) (users !! receiver) text
 
--- Function to simulate message sending for a single user
-sendMessages :: User -> [User] -> MVar Int -> MVar [Msg] -> IO ()
-sendMessages user users messageCount messages = do
-  -- Send 100 messages at random intervals
+{- | Method to select messages from a pool of available messages and create message structure for the sender and the receiver  -}
+createMessage :: [User] -> IO MsgStruct
+createMessage users = do
+  sender <- randomRIO (0, (length users) - 1)
+  let excludeSender = filter (\x -> x /= (sender)) [0..9]
+  i <- randomRIO (0, (length excludeSender) - 1)
+  let receiver = excludeSender !! i 
+  let messagePool = ["Hey, how are you?", 
+                     "Shawshank Redemption is the greatest movie ever?", 
+                     "The weather here in London is good now!", 
+                     "You are a true friend, Thank You!",
+                     "I miss home very much :("]
+  j <- randomRIO (0, (length messagePool) - 1)
+  let text = messagePool !! j
+  putStrLn (name (users !! sender) ++" sent '" ++ text ++ "' to " ++ name (users !! receiver))
+  return $ MsgStruct (users !! sender) (users !! receiver) text
+
+
+{- | Method to mimic sending of message from Sender to Receiver using threads. 100 message threads are initiated at random intervals  -}
+sendMessageThreads :: User -> [User] -> MVar Int -> MVar [MsgStruct] -> IO ()
+sendMessageThreads user users messageCount messages = do
   forM_ [1..10] $ \_ -> do
     threadDelay =<< randomRIO (10000, 20000)
-    message <- generateMessage users
-    currentCount <- takeMVar messageCount
-    if currentCount < 100
+    message <- createMessage users
+    msgThreadCount <- takeMVar messageCount
+    if msgThreadCount < 100
       then do
-        putMVar messageCount (currentCount + 1)
+        putMVar messageCount (msgThreadCount + 1)
         modifyMVar_ messages (\msgList -> return (message:msgList))
       else do
-        putMVar messageCount currentCount
-  putStrLn $ (name user) ++ " finished sending messages."
+        putMVar messageCount msgThreadCount
+  putStrLn "------ Thread Delay ------"
 
 
--- Function to find top 3 most active users (Users who received most messages)
-countReceiver :: [Msg] -> Map.Map User Int
-countReceiver messages = 
-  let messageCounts = Map.fromList [(receiver m, 0) | m <- messages]
-  in foldl (\acc m -> Map.adjust (+1) (receiver m) acc) messageCounts messages
+{- | Method to find top 3 most active users (Users who received most messages)  -}
+countMessages :: [MsgStruct] -> Map.Map User Int
+countMessages messages = 
+  let msgCount = Map.fromList [(receiver m, 0) | m <- messages]
+  in foldl (\acc m -> Map.adjust (+1) (receiver m) acc) msgCount messages

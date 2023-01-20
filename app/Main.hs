@@ -1,3 +1,17 @@
+{- |
+   Module     : Main
+
+   Maintainer : Vishal <ec21202@qmul.ac.uk>
+
+   This application mimics a messaging app by sending 100 messages using 10 threads for 10 pre-defined users.
+   The Application when run generates below mentioned outputs:
+   - 100 instances of a Sender sending a message from the pre-defined pool to the Receiver.
+   - Counts of the messages received by each specific user.
+   - The Top 3 most active users, i.e., the Users who received the most messages -- {Additional Feature}
+
+Written by Vishal
+-}
+
 module Main (main) where
 
 import Datatype
@@ -12,40 +26,35 @@ import qualified Data.Map as Map
 
 main :: IO ()
 main = do
-  -- Create a list of 10 users
-  users <- mapM createUser [0..9]
+  {- | Creating a list of 10 users by selecting users from the User List -}
+  users <- mapM selectUser [0..9]
 
-  -- Create an MVar to store the total message count
-  messageCount <- newMVar 0
+  {- | MVar created to store message count  -}
+  msgsCount <- newMVar 0
 
-  -- Create an MVar to store all the messages
+  {- | MVar created to store all messages sent  -}
   messages <- newMVar []
 
-  -- Spawn a thread for each user
+  {- | Creating threads for each user by forking threads using iteration  -}
   forM_ users $ \user -> do
-    forkIO $ sendMessages user users messageCount messages
+    forkIO $ sendMessageThreads user users msgsCount messages
 
   threadDelay 5000000
-  putStrLn "Completed sending all the messages!!"
-  putStrLn "Calculating all the count of messages sent by each user!!"
-  -- Wait for all threads to finish
+  putStrLn "Completed sending all messages!!"
+  putStrLn ""
+  putStrLn ""
   threadDelay 300000
-  putStrLn "All threads finished. Final message count:"
-
-  -- Print final message count for each user
+  putStrLn "All threads are finished. Message count for each user:"
+  putStrLn ""
   finalMsgs <- readMVar messages
   let msgCount = [length $ filter ((== name user) . name . receiver) finalMsgs | user <- users]
   forM_ (zip users msgCount) $ \(user, count) ->
     putStrLn $ (name user) ++ " received " ++ (show count) ++ " messages."
-  
-  -- Additional Feature : Find 3 Most Active Users
-  let userCountList = countReceiver finalMsgs  
-  let sortedCountList = sortOn (Down . snd) (Map.toList userCountList)
-  putStrLn "The top 3 most active users are :"
-  putStrLn $ show $ take 3 sortedCountList
 
---   putStrLn "The top 3 most active users are :"
---   let sortedMsgCount = reverse $ sort (msgCount)
---   forM_ (zip users sortedMsgCount) $ \(user, count) ->
---     putStrLn $ (name user) ++ " = " ++ (show count)
---print $ take 3 sortedMsgCount
+  {- | Additional Feature  -}
+  let top3Users = take 3 $ sortOn (Down . snd) $ zip users msgCount
+  putStrLn ""
+  putStrLn ""
+  putStrLn "Top 3 Users with most messages received:"
+  putStrLn ""
+  forM_ top3Users $ \(user, count) -> putStrLn $ (name user) ++ " received " ++ (show count) ++ " messages."
