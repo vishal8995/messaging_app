@@ -4,7 +4,7 @@ module Datatype (
   users,
 )where
 
-data User = User {name :: String} deriving (Show)
+data User = User {name :: String} deriving (Show, Eq, Ord)
 data Msg = Msg {sender :: User, receiver :: User, message :: String } deriving (Show)
 
 users :: [User]

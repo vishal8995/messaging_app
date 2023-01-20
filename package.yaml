@@ -37,6 +37,7 @@ library:
   source-dirs: src
   dependencies:
     - random
+    - containers
 
 executables:
   messaging-app-exe:
@@ -49,6 +50,7 @@ executables:
     dependencies:
     - messaging-app
     - random
+    - containers
 
 tests:
   messaging-app-test:
@@ -61,3 +63,4 @@ tests:
     dependencies:
     - messaging-app
     - random
+    - containers

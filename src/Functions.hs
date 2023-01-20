@@ -2,6 +2,7 @@ module Functions (
      createUser,
      generateMessage,
      sendMessages,
+     countReceiver,
 )where
 
 import Datatype
@@ -9,6 +10,8 @@ import Datatype
 import System.Random
 import Control.Concurrent
 import Control.Monad
+import qualified Data.Map as Map
+-- import Data.List (sortWith)
 
 createUser :: Int -> IO User
 createUser n = do
@@ -46,3 +49,9 @@ sendMessages user users messageCount messages = do
         putMVar messageCount currentCount
   putStrLn $ (name user) ++ " finished sending messages."
 
+
+-- Function to find top 3 most active users (Users who received most messages)
+countReceiver :: [Msg] -> Map.Map User Int
+countReceiver messages = 
+  let messageCounts = Map.fromList [(receiver m, 0) | m <- messages]
+  in foldl (\acc m -> Map.adjust (+1) (receiver m) acc) messageCounts messages

@@ -5,8 +5,10 @@ import Functions
 import Control.Concurrent
 import Control.Monad
 import System.Random
-import Data.List
-import GHC.RTS.Flags (TraceFlags(user))
+import Data.List (sortOn)
+import Data.Ord (Down(..))
+import qualified Data.Map as Map
+
 
 main :: IO ()
 main = do
@@ -37,9 +39,13 @@ main = do
     putStrLn $ (name user) ++ " received " ++ (show count) ++ " messages."
   
   -- Additional Feature : Find 3 Most Active Users
-  threadDelay 2000000
+  let userCountList = countReceiver finalMsgs  
+  let sortedCountList = sortOn (Down . snd) (Map.toList userCountList)
   putStrLn "The top 3 most active users are :"
-  let sortedMsgCount = reverse $ sort (msgCount)
-  forM_ (zip users sortedMsgCount) $ \(user, count) ->
-    putStrLn $ (name user) ++ " = " ++ (show count)
-  --print $ take 3 sortedMsgCount
+  putStrLn $ show $ take 3 sortedCountList
+
+--   putStrLn "The top 3 most active users are :"
+--   let sortedMsgCount = reverse $ sort (msgCount)
+--   forM_ (zip users sortedMsgCount) $ \(user, count) ->
+--     putStrLn $ (name user) ++ " = " ++ (show count)
+--print $ take 3 sortedMsgCount
